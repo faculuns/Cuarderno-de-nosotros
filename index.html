@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cuaderno de Nosotros</title>
+<meta name="description" content="Diario compartido de recuerdos para dos personas">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7C2E3E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nosotros">
+<link rel="icon" href="icons/icon-192.png">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root{
+  --bg:#EFE1D4;
+  --bg-deep:#E6D3C1;
+  --card:#FBF6EF;
+  --ink:#3A2A2A;
+  --ink-soft:#7A6A63;
+  --wine:#7C2E3E;
+  --wine-soft:#F0DCDF;
+  --sage:#4E6B52;
+  --sage-soft:#DEE7DD;
+  --gold:#C79A4B;
+  --line:#D8C4AE;
+  --radius:18px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(ellipse at 20% 0%, var(--bg-deep) 0%, transparent 60%),
+    var(--bg);
+}
+
+.app-root{
+  min-height:100vh;
+  max-width:480px;
+  margin:0 auto;
+  position:relative;
+  padding-bottom:calc(110px + env(safe-area-inset-bottom));
+}
+
+.header{ padding:28px 20px 18px; position:relative; }
+.header-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+.title{ font-family:'Fraunces',serif; font-weight:600; font-size:28px; line-height:1.15; letter-spacing:-0.01em; }
+.title em{ font-style:italic; color:var(--wine); }
+.subtitle{ font-size:13px; color:var(--ink-soft); margin-top:6px; font-family:'JetBrains Mono',monospace; letter-spacing:0.01em; }
+.gear-btn{
+  background:var(--card); border:1px solid var(--line); width:38px;height:38px; border-radius:12px;
+  display:flex;align-items:center;justify-content:center; cursor:pointer; color:var(--ink-soft);
+  transition:transform .15s ease, color .15s ease; flex-shrink:0;
+}
+.gear-btn:active{transform:scale(0.92);}
+.gear-btn:hover{color:var(--wine);}
+
+.author-switch{ display:flex; gap:8px; margin-top:20px; }
+.author-pill{
+  flex:1; padding:10px 12px; border-radius:14px; border:1.5px solid var(--line); background:var(--card);
+  font-size:13.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; text-align:center;
+  transition:all .15s ease; font-family:'Inter',sans-serif;
+}
+.author-pill.active-a{ border-color:var(--wine); background:var(--wine-soft); color:var(--wine); }
+.author-pill.active-b{ border-color:var(--sage); background:var(--sage-soft); color:var(--sage); }
+
+.timeline{ position:relative; padding:10px 20px 20px 34px; }
+.thread{
+  position:absolute; left:20px; top:0; bottom:0; width:2px;
+  background-image:linear-gradient(var(--gold) 60%, transparent 0%);
+  background-size:2px 10px; background-repeat:repeat-y; opacity:0.55;
+}
+
+.entry-card{
+  position:relative; background:var(--card); border-radius:var(--radius); padding:16px 16px 14px; margin-bottom:16px;
+  box-shadow:0 1px 2px rgba(58,42,42,0.05), 0 6px 16px -10px rgba(58,42,42,0.25);
+  animation:riseIn .35s ease both;
+}
+@keyframes riseIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+.stitch-dot{
+  position:absolute; left:-24px; top:20px; width:11px;height:11px; border-radius:50%;
+  border:2px solid var(--card); box-shadow:0 0 0 1.5px var(--gold);
+}
+.stitch-dot.a{background:var(--wine);}
+.stitch-dot.b{background:var(--sage);}
+
+.entry-top{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+.avatar{
+  width:28px;height:28px; border-radius:50%; display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif; font-weight:600; font-size:13px; color:#fff; flex-shrink:0;
+}
+.avatar.a{background:var(--wine);}
+.avatar.b{background:var(--sage);}
+.entry-meta{flex:1; min-width:0;}
+.entry-name{font-size:13.5px; font-weight:600;}
+.entry-date{ font-size:11px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; margin-top:1px; }
+.entry-mood{font-size:18px;}
+.entry-text{ font-size:14.5px; line-height:1.55; color:var(--ink); white-space:pre-wrap; word-break:break-word; }
+.entry-del{
+  position:absolute; top:14px;right:14px; width:22px;height:22px; border-radius:50%; border:none;
+  background:transparent; color:var(--ink-soft); font-size:15px; cursor:pointer; opacity:0.5; transition:opacity .15s;
+}
+.entry-del:hover{opacity:1; color:var(--wine);}
+
+.empty-state{ text-align:center; padding:50px 30px 30px; color:var(--ink-soft); }
+.empty-state .icon{font-size:34px; margin-bottom:12px;}
+.empty-state .msg{ font-family:'Fraunces',serif; font-size:17px; color:var(--ink); margin-bottom:6px; }
+.empty-state .sub{font-size:13px;}
+
+.loading{ text-align:center; padding:60px 20px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; font-size:13px; }
+.error-banner{
+  margin:10px 20px; padding:12px 14px; border-radius:12px; background:#F6DCDC; color:#7A2A2A;
+  font-size:12.5px; line-height:1.5; border:1px solid #E3B5B5;
+}
+
+.fab{ position:fixed; bottom:calc(26px + env(safe-area-inset-bottom)); left:50%; width:auto; }
+.fab-inner{
+  position:absolute; bottom:0; right:calc(50% - 240px + 20px); background:var(--wine); color:#fff; border:none;
+  width:56px;height:56px; border-radius:50%; font-size:26px; display:flex;align-items:center;justify-content:center;
+  cursor:pointer; box-shadow:0 10px 24px -8px rgba(124,46,62,0.55); transition:transform .15s ease;
+}
+.fab-inner:active{transform:scale(0.92);}
+
+.overlay{ position:fixed; inset:0; background:rgba(58,42,42,0.35); display:none; align-items:flex-end; justify-content:center; z-index:50; }
+.overlay.open{display:flex;}
+.sheet{
+  width:100%; max-width:480px; background:var(--bg); border-radius:24px 24px 0 0; padding:22px 20px calc(26px + env(safe-area-inset-bottom));
+  animation:slideUp .25s ease both; max-height:88vh; overflow-y:auto;
+}
+@keyframes slideUp{ from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+.sheet-handle{ width:36px;height:4px; background:var(--line); border-radius:2px; margin:0 auto 16px; }
+.sheet-title{ font-family:'Fraunces',serif; font-weight:600; font-size:19px; margin-bottom:16px; }
+.field-label{ font-size:12px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
+.mood-row{ display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+.mood-opt{
+  width:42px;height:42px; border-radius:12px; border:1.5px solid var(--line); background:var(--card);
+  font-size:19px; display:flex;align-items:center;justify-content:center; cursor:pointer; transition:all .15s ease;
+}
+.mood-opt.selected{ border-color:var(--gold); background:#FBEFD6; transform:scale(1.06); }
+textarea{
+  width:100%; min-height:110px; border-radius:14px; border:1.5px solid var(--line); background:var(--card);
+  padding:12px 14px; font-family:'Inter',sans-serif; font-size:14.5px; color:var(--ink); resize:vertical; margin-bottom:18px;
+}
+textarea:focus, input:focus{outline:2px solid var(--gold); outline-offset:1px;}
+.btn-row{display:flex; gap:10px;}
+.btn{
+  flex:1; padding:13px; border-radius:14px; border:none; font-size:14.5px; font-weight:600; cursor:pointer;
+  font-family:'Inter',sans-serif; transition:transform .15s ease, opacity .15s ease;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--wine); color:#fff;}
+.btn-primary:disabled{opacity:0.45; cursor:not-allowed;}
+.btn-ghost{background:transparent; color:var(--ink-soft); flex:0 0 auto; padding:13px 18px;}
+
+.settings-field{margin-bottom:14px;}
+input[type=text]{
+  width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--line); background:var(--card);
+  font-size:14px; font-family:'Inter',sans-serif; color:var(--ink);
+}
+.settings-note{ font-size:12px; color:var(--ink-soft); line-height:1.5; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+
+.toast{
+  position:fixed; bottom:calc(100px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%) translateY(10px);
+  background:var(--ink); color:#fff; padding:10px 18px; border-radius:100px; font-size:13px; opacity:0;
+  pointer-events:none; transition:all .25s ease; z-index:60; white-space:nowrap;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="app-root" id="root">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="title">Cuaderno de <em>Nosotros</em></div>
+        <div class="subtitle" id="entryCount">cargando...</div>
+      </div>
+      <button class="gear-btn" id="gearBtn" aria-label="Ajustes">⚙</button>
+    </div>
+    <div class="author-switch">
+      <button class="author-pill" id="pillA">…</button>
+      <button class="author-pill" id="pillB">…</button>
+    </div>
+  </div>
+
+  <div id="errorBanner"></div>
+  <div id="timelineWrap">
+    <div class="loading">abriendo el cuaderno…</div>
+  </div>
+
+  <div class="fab">
+    <button class="fab-inner" id="openComposeBtn" aria-label="Nuevo recuerdo">✎</button>
+  </div>
+</div>
+
+<div class="overlay" id="composeOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">¿Qué pasó hoy?</div>
+    <div class="field-label">Estado de ánimo (opcional)</div>
+    <div class="mood-row" id="moodRow"></div>
+    <textarea id="entryText" placeholder="Escribí el recuerdo, la anécdota, lo que quieran guardar..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="cancelComposeBtn">Cancelar</button>
+      <button class="btn btn-primary" id="saveEntryBtn" disabled>Guardar recuerdo</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Ajustes</div>
+    <div class="settings-field">
+      <div class="field-label">Nombre 1</div>
+      <input type="text" id="nameAInput" maxlength="20">
+    </div>
+    <div class="settings-field">
+      <div class="field-label">Nombre 2</div>
+      <input type="text" id="nameBInput" maxlength="20">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="cancelSettingsBtn">Cerrar</button>
+      <button class="btn btn-primary" id="saveSettingsBtn">Guardar nombres</button>
+    </div>
+    <div class="settings-note">
+      Los recuerdos se guardan en su propia base de datos de Firebase y se sincronizan en tiempo real entre los dos celulares. Cualquiera que tenga el enlace de esta app y la configuración de Firebase podría, en teoría, acceder a los datos — es un proyecto pensado para uso personal entre ustedes dos, no para compartir el enlace públicamente.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase (compat SDK, simple de usar con <script> tags) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<script>
+(function(){
+  const MOODS = ['😊','🥰','🎉','😔','😤','😴','🤔','✨'];
+
+  let db = null;
+  let firebaseReady = false;
+  let entries = [];
+  let settings = { a: 'Nombre 1', b: 'Nombre 2' };
+  let currentAuthor = 'a';
+  let selectedMood = null;
+
+  const el = (id) => document.getElementById(id);
+  const timelineWrap = el('timelineWrap');
+  const entryCountEl = el('entryCount');
+  const errorBanner = el('errorBanner');
+  const pillA = el('pillA');
+  const pillB = el('pillB');
+
+  function showConfigError(){
+    errorBanner.innerHTML = `<div class="error-banner">
+      Todavía no configuraste Firebase. Abrí el archivo <b>firebase-config.js</b> y pegá los datos
+      de tu proyecto (ver README.md). Mientras tanto, la app no puede guardar nada.
+    </div>`;
+    timelineWrap.innerHTML = '';
+    entryCountEl.textContent = 'falta configurar';
+  }
+
+  function initFirebase(){
+    try{
+      if(!window.firebaseConfig || window.firebaseConfig.apiKey === "PEGA_ACA_TU_API_KEY" ||
+         (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey === "PEGA_ACA_TU_API_KEY")){
+        showConfigError();
+        return false;
+      }
+      const cfg = (typeof firebaseConfig !== 'undefined') ? firebaseConfig : window.firebaseConfig;
+      firebase.initializeApp(cfg);
+      db = firebase.firestore();
+      return true;
+    }catch(e){
+      console.error(e);
+      showConfigError();
+      return false;
+    }
+  }
+
+  function toast(msg){
+    const t = el('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  function fmtDate(input){
+    const d = (input && input.toDate) ? input.toDate() : new Date(input);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    const yest = new Date(today); yest.setDate(today.getDate()-1);
+    const isYest = d.toDateString() === yest.toDateString();
+    const time = d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+    if(isToday) return 'Hoy · ' + time;
+    if(isYest) return 'Ayer · ' + time;
+    return d.toLocaleDateString('es-AR', {day:'numeric', month:'short', year: d.getFullYear()!==today.getFullYear() ? 'numeric' : undefined}) + ' · ' + time;
+  }
+
+  function renderAuthorPills(){
+    pillA.textContent = settings.a;
+    pillB.textContent = settings.b;
+    pillA.className = 'author-pill' + (currentAuthor==='a' ? ' active-a' : '');
+    pillB.className = 'author-pill' + (currentAuthor==='b' ? ' active-b' : '');
+  }
+
+  function initials(name){
+    return (name||'?').trim().slice(0,1).toUpperCase() || '?';
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function renderTimeline(){
+    entryCountEl.textContent = entries.length === 0
+      ? 'un cuaderno nuevo'
+      : entries.length + (entries.length===1 ? ' recuerdo guardado' : ' recuerdos guardados');
+
+    if(entries.length === 0){
+      timelineWrap.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🌿</div>
+          <div class="msg">Todavía no hay recuerdos</div>
+          <div class="sub">Toquen el botón de abajo para escribir el primero.</div>
+        </div>`;
+      return;
+    }
+
+    const sorted = [...entries].sort((a,b)=> (b.createdAtMs||0) - (a.createdAtMs||0));
+    let html = '<div class="timeline"><div class="thread"></div>';
+    for(const e of sorted){
+      const name = e.author === 'a' ? settings.a : settings.b;
+      html += `
+        <div class="entry-card" data-id="${e.id}">
+          <button class="entry-del" data-del="${e.id}" aria-label="Borrar">✕</button>
+          <div class="stitch-dot ${e.author}"></div>
+          <div class="entry-top">
+            <div class="avatar ${e.author}">${initials(name)}</div>
+            <div class="entry-meta">
+              <div class="entry-name">${escapeHtml(name)}</div>
+              <div class="entry-date">${fmtDate(e.createdAt)}</div>
+            </div>
+            ${e.mood ? `<div class="entry-mood">${e.mood}</div>` : ''}
+          </div>
+          <div class="entry-text">${escapeHtml(e.text)}</div>
+        </div>`;
+    }
+    html += '</div>';
+    timelineWrap.innerHTML = html;
+
+    timelineWrap.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        deleteEntry(btn.getAttribute('data-del'));
+      });
+    });
+  }
+
+  function listenEntries(){
+    db.collection('entries').orderBy('createdAt', 'desc').onSnapshot((snap)=>{
+      entries = snap.docs.map(doc=>{
+        const d = doc.data();
+        return {
+          id: doc.id,
+          author: d.author,
+          mood: d.mood || null,
+          text: d.text,
+          createdAt: d.createdAt,
+          createdAtMs: d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : Date.now()
+        };
+      });
+      renderTimeline();
+    }, (err)=>{
+      console.error(err);
+      errorBanner.innerHTML = `<div class="error-banner">No se pudo conectar con la base de datos. Revisá tu configuración de Firebase y las reglas de seguridad de Firestore.</div>`;
+    });
+  }
+
+  function listenSettings(){
+    db.collection('meta').doc('settings').onSnapshot((doc)=>{
+      if(doc.exists){
+        settings = doc.data();
+        renderAuthorPills();
+        renderTimeline();
+      }
+    });
+  }
+
+  async function deleteEntry(id){
+    try{
+      await db.collection('entries').doc(id).delete();
+    }catch(e){
+      toast('No se pudo borrar. Intenten de nuevo.');
+    }
+  }
+
+  pillA.addEventListener('click', ()=>{ currentAuthor='a'; renderAuthorPills(); });
+  pillB.addEventListener('click', ()=>{ currentAuthor='b'; renderAuthorPills(); });
+
+  const moodRow = el('moodRow');
+  MOODS.forEach(m=>{
+    const b = document.createElement('button');
+    b.className = 'mood-opt';
+    b.textContent = m;
+    b.type = 'button';
+    b.addEventListener('click', ()=>{
+      selectedMood = (selectedMood === m) ? null : m;
+      moodRow.querySelectorAll('.mood-opt').forEach(x=>x.classList.remove('selected'));
+      if(selectedMood) b.classList.add('selected');
+    });
+    moodRow.appendChild(b);
+  });
+
+  const composeOverlay = el('composeOverlay');
+  const entryText = el('entryText');
+  const saveEntryBtn = el('saveEntryBtn');
+
+  el('openComposeBtn').addEventListener('click', ()=>{
+    if(!firebaseReady){ toast('Configurá Firebase primero (ver README.md)'); return; }
+    entryText.value=''; selectedMood=null;
+    moodRow.querySelectorAll('.mood-opt').forEach(x=>x.classList.remove('selected'));
+    saveEntryBtn.disabled = true;
+    composeOverlay.classList.add('open');
+    setTimeout(()=>entryText.focus(), 150);
+  });
+  el('cancelComposeBtn').addEventListener('click', ()=> composeOverlay.classList.remove('open'));
+  composeOverlay.addEventListener('click', (e)=>{ if(e.target===composeOverlay) composeOverlay.classList.remove('open'); });
+  entryText.addEventListener('input', ()=>{
+    saveEntryBtn.disabled = entryText.value.trim().length === 0;
+  });
+
+  saveEntryBtn.addEventListener('click', async ()=>{
+    const text = entryText.value.trim();
+    if(!text) return;
+    saveEntryBtn.disabled = true;
+    saveEntryBtn.textContent = 'Guardando…';
+    try{
+      await db.collection('entries').add({
+        author: currentAuthor,
+        mood: selectedMood,
+        text: text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      composeOverlay.classList.remove('open');
+      toast('Recuerdo guardado 💛');
+    }catch(e){
+      console.error(e);
+      toast('No se pudo guardar. Revisen su conexión.');
+    }finally{
+      saveEntryBtn.textContent = 'Guardar recuerdo';
+      saveEntryBtn.disabled = false;
+    }
+  });
+
+  const settingsOverlay = el('settingsOverlay');
+  el('gearBtn').addEventListener('click', ()=>{
+    el('nameAInput').value = settings.a;
+    el('nameBInput').value = settings.b;
+    settingsOverlay.classList.add('open');
+  });
+  el('cancelSettingsBtn').addEventListener('click', ()=> settingsOverlay.classList.remove('open'));
+  settingsOverlay.addEventListener('click', (e)=>{ if(e.target===settingsOverlay) settingsOverlay.classList.remove('open'); });
+
+  el('saveSettingsBtn').addEventListener('click', async ()=>{
+    const a = el('nameAInput').value.trim() || 'Nombre 1';
+    const b = el('nameBInput').value.trim() || 'Nombre 2';
+    try{
+      await db.collection('meta').doc('settings').set({a, b});
+      settingsOverlay.classList.remove('open');
+      toast('Nombres actualizados');
+    }catch(e){
+      toast('No se pudo guardar el ajuste.');
+    }
+  });
+
+  // Init
+  firebaseReady = initFirebase();
+  if(firebaseReady){
+    listenEntries();
+    listenSettings();
+    renderAuthorPills();
+  }
+
+  // Register service worker for offline/installable behaviour
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW no registrado', err));
+    });
+  }
+})();
+</script>
+</body>
+</html>
