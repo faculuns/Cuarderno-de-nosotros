@@ -274,13 +274,12 @@ input[type=text]{
 
   function initFirebase(){
     try{
-      if(!window.firebaseConfig || window.firebaseConfig.apiKey === "PEGA_ACA_TU_API_KEY" ||
-         (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey === "PEGA_ACA_TU_API_KEY")){
+      if(typeof firebaseConfig === 'undefined' || !firebaseConfig.apiKey ||
+         firebaseConfig.apiKey === "PEGA_ACA_TU_API_KEY"){
         showConfigError();
         return false;
       }
-      const cfg = (typeof firebaseConfig !== 'undefined') ? firebaseConfig : window.firebaseConfig;
-      firebase.initializeApp(cfg);
+      firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
       return true;
     }catch(e){
