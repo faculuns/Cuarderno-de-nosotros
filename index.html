@@ -74,6 +74,38 @@ body{
 .presence-dot.online{ background:var(--online); opacity:1; box-shadow:0 0 0 3px rgba(95,190,114,0.18); }
 .presence-row b{ color:var(--ink); font-weight:600; }
 .presence-lastseen{ font-size:11px; color:var(--ink-soft); opacity:0.8; margin-top:2px; font-family:'JetBrains Mono',monospace; }
+
+.buzz-btn{
+  width:100%; margin-top:10px; padding:11px; border-radius:14px; border:1.5px solid var(--wine);
+  background:var(--wine-soft); color:var(--wine); font-size:13px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:7px; transition:transform .12s ease, opacity .15s ease;
+  font-family:'Inter',sans-serif;
+}
+.buzz-btn:active{ transform:scale(0.96); }
+.buzz-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+.buzz-icon{ display:inline-flex; align-items:center; justify-content:center; transform-origin:60% 50%; }
+.buzz-icon.ringing{ animation:buzzRing .4s ease infinite; }
+@keyframes buzzRing{
+  0%,100%{ transform:rotate(0deg); }
+  20%{ transform:rotate(-18deg); }
+  40%{ transform:rotate(16deg); }
+  60%{ transform:rotate(-12deg); }
+  80%{ transform:rotate(8deg); }
+}
+
+.app-root.shaking{ animation:appShake .5s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes appShake{
+  10%,90%{ transform:translateX(-1px); }
+  20%,80%{ transform:translateX(2px); }
+  30%,50%,70%{ transform:translateX(-6px); }
+  40%,60%{ transform:translateX(6px); }
+}
+
+.buzz-flash{
+  position:fixed; inset:0; background:var(--wine); opacity:0; pointer-events:none; z-index:80;
+  transition:opacity .12s ease;
+}
+.buzz-flash.show{ opacity:0.16; }
 .timeline{ position:relative; padding:10px 20px 20px 34px; }
 .thread{
   position:absolute; left:20px; top:0; bottom:0; width:2px;
@@ -216,6 +248,7 @@ input[type=text]{
 </style>
 </head>
 <body>
+<div class="buzz-flash" id="buzzFlash"></div>
 <div class="app-root" id="root">
   <div class="header">
     <div class="header-top">
@@ -233,6 +266,13 @@ input[type=text]{
       <div class="presence-dot" id="presenceDot"></div>
       <span id="presenceText">buscando a tu compañera/o…</span>
     </div>
+    <button class="buzz-btn" id="buzzBtn" type="button">
+      <span class="buzz-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>
+        </svg>
+      </span> Zumbido
+    </button>
   </div>
 
   <div id="errorBanner"></div>
@@ -364,6 +404,9 @@ input[type=text]{
   let markedRead = new Set();
   let heartbeatTimer = null;
   let presenceTickTimer = null;
+  let lastBuzzNonce = null;
+  let buzzInitialized = false;
+  let audioCtx = null;
 
   const el = (id) => document.getElementById(id);
   const timelineWrap = el('timelineWrap');
@@ -373,6 +416,9 @@ input[type=text]{
   const pillB = el('pillB');
   const presenceDot = el('presenceDot');
   const presenceText = el('presenceText');
+  const buzzBtn = el('buzzBtn');
+  const buzzFlash = el('buzzFlash');
+  const appRoot = el('root');
 
   function showConfigError(){
     errorBanner.innerHTML = `<div class="error-banner">
@@ -615,6 +661,82 @@ input[type=text]{
     window.addEventListener('focus', sendHeartbeat);
   }
 
+  function playBuzzSound(){
+    try{
+      if(!audioCtx){
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(70, now + 0.28);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.34);
+    }catch(e){ console.warn('no se pudo reproducir el sonido', e); }
+  }
+
+  function triggerBuzzEffect(){
+    playBuzzSound();
+    if(navigator.vibrate){
+      navigator.vibrate([120, 60, 120, 60, 260]);
+    }
+    appRoot.classList.remove('shaking');
+    void appRoot.offsetWidth;
+    appRoot.classList.add('shaking');
+    buzzFlash.classList.add('show');
+    setTimeout(()=> buzzFlash.classList.remove('show'), 160);
+    setTimeout(()=> appRoot.classList.remove('shaking'), 550);
+  }
+
+  async function sendBuzz(){
+    if(!db) return;
+    buzzBtn.disabled = true;
+    const icon = buzzBtn.querySelector('.buzz-icon');
+    icon.classList.add('ringing');
+    try{
+      await db.collection('meta').doc('buzz').set({
+        by: currentAuthor,
+        nonce: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+        at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      triggerBuzzEffect();
+      toast('Zumbido enviado 📳');
+    }catch(e){
+      console.error(e);
+      toast('No se pudo mandar el zumbido.');
+    }finally{
+      setTimeout(()=>{ buzzBtn.disabled = false; icon.classList.remove('ringing'); }, 1200);
+    }
+  }
+
+  function listenBuzz(){
+    db.collection('meta').doc('buzz').onSnapshot((doc)=>{
+      if(!doc.exists) return;
+      const data = doc.data();
+      if(!buzzInitialized){
+        buzzInitialized = true;
+        lastBuzzNonce = data.nonce;
+        return;
+      }
+      if(data.nonce === lastBuzzNonce) return;
+      lastBuzzNonce = data.nonce;
+      if(data.by === currentAuthor) return;
+      triggerBuzzEffect();
+      const fromName = settings[data.by] || 'tu compañera/o';
+      toast(`${fromName} te mandó un zumbido 📳`);
+    });
+  }
+
+  buzzBtn.addEventListener('click', sendBuzz);
+
   async function deleteEntry(id){
     try{
       await db.collection('entries').doc(id).delete();
@@ -852,6 +974,7 @@ input[type=text]{
     listenEntries();
     listenSettings();
     listenPresence();
+    listenBuzz();
     renderAuthorPills();
     renderPresence();
     startPresence();
