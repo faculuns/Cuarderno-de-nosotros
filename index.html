@@ -936,6 +936,16 @@ input[type=text]{
         readBy: [],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+
+      const nombreAutor = currentAuthor === 'a' ? settings.a : settings.b;
+      fetch('https://faculuns.app.n8n.cloud/webhook/128a07c3-c78c-4e3c-9c42-3bc30f462b65', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          mensaje: '💌 ' + nombreAutor + ' escribió algo nuevo en el Cuaderno de Nosotros: "' + text + '"'
+        })
+      }).catch(err => console.warn('No se pudo avisar por WhatsApp', err));
+
       composeOverlay.classList.remove('open');
       toast('Recuerdo guardado 💛');
     }catch(e){
